@@ -4,9 +4,9 @@
 
 
 typedef struct {
-    int effort;
     int path[20];
     int path_len;
+    int use_power;
 } Best_path;
 
 // recursive backtracking method to try all possible ways
@@ -25,8 +25,8 @@ void findPath(int N, int arr[N][N], int current, bool visited[N], int effort, in
 
     // is visited all - is the best way?
     if (all_visited) {
-        if (effort < best->effort) {
-            best->effort = effort;
+        if (effort < best->use_power) {
+            best->use_power = effort;
             best->path_len = path_len;
             for (int i = 0; i < path_len; i++) {
                 best->path[i] = path[i];
@@ -53,7 +53,7 @@ void process(int N, int arr[N][N]) {
     Best_path best; // init struct
 
     // define struct val.
-    best.effort = INT_MAX;
+    best.use_power = INT_MAX;
     best.path_len = 0;
 
     // start pos is 0
@@ -61,7 +61,7 @@ void process(int N, int arr[N][N]) {
     findPath(N, arr, 0, visited, 0, path, 0, &best);
 
     // print reslt.
-    printf("%d\n", best.effort);
+    printf("%d\n", best.use_power);
     for (int i = 0; i < best.path_len; i++) {
         printf("%d ", best.path[i]+1);
     }
