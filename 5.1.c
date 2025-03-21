@@ -1,3 +1,4 @@
+// uloha-5-1.c -- Nazar Meredov, 2025-03-21 16:33
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,7 +11,7 @@ typedef struct {
     int* values;
     int size;
     int k;
-} Array;
+} U_i_struct;
 
 // memo table
 typedef struct {
@@ -48,82 +49,116 @@ void freeMemoTable(MemoTable table, int n) {
     free(table.calculated);
 }
 
+// Check if a segment can be divided
+bool canDivide(U_i_struct arr, int start, int end) {
+    for (int i = start; i < end - 1; i++) {
+        for (int j = i + 1; j < end; j++) {
+            if (abs(arr.values[i] - arr.values[j]) >= arr.k) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 // find min segments with recursion
-int minSegments(Array arr, int start, int end, MemoTable* table) {
-    // we haave less than 3 elements
+int minSegments(U_i_struct arr, int start, int end, MemoTable* table) {
+    // Base case: if segment length is less than 3
     if (end - start < 3) {
-        return end - start;
+        return 1;  // Each segment of length 1 or 2 counts as one segment
     }
 
-    // stop?
+    // Check memo table
     if (table->calculated[start][end]) {
         return table->memo[start][end];
     }
 
-    // start reslt. val
-    int result = INT_MAX;
+    // Can't divide this segment further if no pair has difference >= K
+    if (!canDivide(arr, start, end)) {
+        table->memo[start][end] = 1;
+        table->calculated[start][end] = true;
+        return 1;
+    }
 
-    for (int i = start+2; i <= end; i++) {
-        for (int j = start; j < i - 1; j++) {
-            // check that we can split arr.
-            if (abs(arr.values[j] - arr.values[i - 1]) >= arr.k) {
+    // Try all possible splits
+    int min_result = INT_MAX;
+    for (int i = start + 1; i < end; i++) {
+        // For each pair of indices where values differ by at least K
+        for (int j = start; j < i; j++) {
+            for (int k = i; k < end; k++) {
+                if (abs(arr.values[j] - arr.values[k]) >= arr.k) {
+                    // Calculate minimum segments for left and right parts
+                    int left_result = minSegments(arr, start, i, table);
+                    int right_result = minSegments(arr, i, end, table);
 
-                // split cost
-                int leftSegments = (int)floor((j - start + 1) / 2.0);
-                int rightSegments = (int)ceil((end - j - 1) / 2.0);
-                int cost = leftSegments + rightSegments + 1;
-
-                // its less then previos?
-                if (cost < result) {
-                    result = cost;
+                    // Update min_result if this split is better
+                    int total = left_result + right_result;
+                    if (total < min_result) {
+                        min_result = total;
+                    }
                 }
             }
         }
     }
 
-    // we cant split so we take end-start
-    if (result == INT_MAX) {
-        result = end - start;
+    // If we couldn't find a valid split, this segment counts as one
+    if (min_result == INT_MAX) {
+        min_result = 1;
     }
 
-    // save reslt. in memo table
-    table->memo[start][end] = result;
+    // Save result in memo table
+    table->memo[start][end] = min_result;
     table->calculated[start][end] = true;
 
-    return result;
+    return min_result;
 }
 
 int main() {
-    int n, k;
+    int N, K;
 
-    while (scanf("%d %d", &n, &k) > 0) {
-        Array arr;
-        arr.size = n;
-        arr.k = k;
-        arr.values = (int*)calloc(n, sizeof(int));
+    while (scanf("%d %d", &N, &K) == 2) {
+        if (N < 1 || N > 50 || K < 0 || K > 1000) {
+            printf("Error\n");
+            continue;
+        }
+        U_i_struct U_i;
+        U_i.size = N;
+        U_i.k = K;
+        U_i.values = (int*)calloc(N, sizeof(int));
 
+        bool valid = true;
+        for (int i = 0; i < N; i++) {
+            if (scanf("%d", &U_i.values[i]) != 1) {
+                printf("Error\n");
+                valid = false;
+                break;
+            }
 
-        for (int i = 0; i < n; i++) {
-            scanf("%d", &arr.values[i]);
+            if (U_i.values[i] < 0 || U_i.values[i] > 1000) {
+                printf("Error %d\n", U_i.values[i]);
+                valid = false;
+                break;
+            }
+        }
+        if (!valid) {
+            free(U_i.values);
+            break;
         }
 
-
-        if (n < 3) {
-            printf("%d\n", n);
-            free(arr.values);
+        if (N < 3) {
+            printf("%d\n", 1);  // Changed to 1 since each segment counts as 1
+            free(U_i.values);
             continue;
         }
 
-        MemoTable table = initMemoTable(n);
+        MemoTable table = initMemoTable(N);
 
-        int result = minSegments(arr, 0, n, &table);
+        int result = minSegments(U_i, 0, N, &table);
         printf("%d\n", result);
 
-
         // free memory
-        freeMemoTable(table, n);
-        free(arr.values);
+        freeMemoTable(table, N);
+        free(U_i.values);
     }
-
     return 0;
 }
